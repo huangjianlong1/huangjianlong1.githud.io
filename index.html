@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>项目管理表</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .search-container {
+            margin-bottom: 10px;
+        }
+        .search-container select, .search-container input {
+            margin-right: 5px;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <select id="phaseFilter" onchange="filterByPhase()">
+            <option value="">所有阶段</option>
+            <option value="签合同">签合同</option>
+            <option value="施工中">施工中</option>
+            <option value="完工入库">完工入库</option>
+            <option value="结算完成">结算完成</option>
+        </select>
+    </div>
+
+    <table id="projectTable">
+        <thead>
+            <tr>
+                <th>项目编号</th>
+                <th>合同编号</th>
+                <th>合同名称</th>
+                <th>合同金额</th>
+                <th>完工入库金额</th>
+                <th>结算金额</th>
+                <th>开工日期</th>
+                <th>完工日期</th>
+                <th>验收日期</th>
+                <th>项目阶段</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- 表格内容 -->
+        </tbody>
+    </table>
+
+    <form id="projectForm" onsubmit="addProject(event)">
+        <div style="margin: 20px 0;">
+            <input type="text" id="projectNumber" placeholder="项目编号" required>
+            <input type="text" id="contractNumber" placeholder="合同编号" required>
+            <input type="text" id="contractName" placeholder="合同名称" required>
+            <input type="number" id="contractAmount" placeholder="合同金额" step="0.01" required>
+            <input type="number" id="completion入库Amount" placeholder="完工入库金额" step="0.01">
+            <input type="number" id="settlementAmount" placeholder="结算金额" step="0.01">
+            <input type="date" id="startDate" placeholder="开工日期" required>
+            <input type="date" id="completionDate" placeholder="完工日期">
+            <input type="date" id="acceptanceDate" placeholder="验收日期">
+            <select id="projectPhase" required>
+                <option value="签合同">签合同</option>
+                <option value="施工中">施工中</option>
+                <option value="完工入库">完工入库</option>
+                <option value="结算完成">结算完成</option>
+            </select>
+            <button type="submit" style="margin-left: 10px;">添加项目</button>
+        </div>
+    </form>
+
+    <script>
+        let projects = [];
+
+        function addProject(event) {
+            event.preventDefault();
+            const project = {
+                number: document.getElementById('projectNumber').value,
+                contractNumber: document.getElementById('contractNumber').value,
+                name: document.getElementById('contractName').value,
+                amount: parseFloat(document.getElementById('contractAmount').value),
+                completion入库Amount: parseFloat(document.getElementById('completion入库Amount').value) || 0,
+                settlementAmount: parseFloat(document.getElementById('settlementAmount').value) || 0,
+                startDate: document.getElementById('startDate').value,
+                completionDate: document.getElementById('completionDate').value,
+                acceptanceDate: document.getElementById('acceptanceDate').value,
+                phase: document.getElementById('projectPhase').value
+            };
+
+            projects.push(project);
+            renderTable();
+            clearForm();
+        }
+
+        function clearForm() {
+            const inputs = [
+                'projectNumber', 'contractNumber', 'contractName',
+                'contractAmount', 'completion入库Amount', 'settlementAmount',
+                'startDate', 'completionDate', 'acceptanceDate'
+            ];
+            inputs.forEach(id => document.getElementById(id).value = '');
+            document.getElementById('projectPhase').selectedIndex = 0;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            projects.forEach(project => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${project.number}</td>
+                    <td>${project.contractNumber}</td>
+                    <td>${project.name}</td>
+                    <td>${project.amount.toFixed(2)}</td>
+                    <td>${project.completion入库Amount.toFixed(2)}</td>
+                    <td>${project.settlementAmount.toFixed(2)}</td>
+                    <td>${project.startDate}</td>
+                    <td>${project.completionDate}</td>
+                    <td>${project.acceptanceDate}</td>
+                    <td><select class="phaseSelect" onchange="updateProjectPhase(this, '${project.number}')">${getPhaseOptions(project.phase)}</select></td>
+                    <td><button onclick="deleteProject('${project.number}')">删除</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateProjectPhase(select, projectNumber) {
+            const phase = select.value;
+            projects.find(p => p.number === projectNumber).phase = phase;
+            renderTable();
+        }
+
+        function deleteProject(projectNumber) {
+            projects = projects.filter(p => p.number !== projectNumber);
+            renderTable();
+        }
+
+        function getPhaseOptions(selectedPhase) {
+            return ['签合同', '施工中', '完工入库', '结算完成'].map(phase => 
+                `<option value="${phase}" ${phase === selectedPhase ? 'selected' : ''}>${phase}</option>`
+            ).join('');
+        }
+
+        function filterByPhase() {
+            const phase = document.getElementById('phaseFilter').value;
+            if (phase) {
+                projects = projects.filter(p => p.phase === phase);
+            } else {
+                // 如果需要保留原始数据，可以在这里保存一份备份
+                renderTable();
+            }
+            renderTable();
+        }
+
+        // 初始渲染表格
+        renderTable();
+
+        // 日期输入框默认为当前日期
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').value = today;
+    </script>
+</body>
+</html>
