@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-_CN">
+<head>
+    <meta charset="UTF-8">
+    <title>导航栏修改</title>
+    <style>
+        /* 导航栏整体样式 */
+        .nav-container {
+            background-color: #009c3b;  /* 绿色背景 */
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: 宋体, Arial, sans-serif;  /* 中文宋体优先 */
+            color: #000000;  /* 黑色字体 */
+        }
+
+        /* 菜单容器样式 */
+        .nav-menu {
+            display: flex;  /* 横排排列 */
+            justify-content: center;  /* 居中对齐 */
+            gap: 25px;  /* 菜单之间间距 */
+            list-style: none;  /* 去掉默认列表样式 */
+        }
+
+        /* 单个菜单项样式 */
+        .nav-item {
+            padding: 10px 20px;  /* 内部填充 */
+            border-radius: 5px;  /* 圆角边框 */
+            background-color: #d4e7c6;  /* 浅绿色背景 */
+            transition: all 0.3s ease;  /* 平滑过渡效果 */
+        }
+
+        /* 鼠标悬停效果 */
+        .nav-item:hover {
+            transform: translateY(-2px);  /* 上移2像素 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  /* 悬停时添加阴影 */
+        }
+
+        /* 鼠标点击效果（可选） */
+        .nav-item:active {
+            transform: translateY(0);  /* 取消上移 */
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-container">
+        <ul class="nav-menu">
+            <li class="nav-item">施工前准备资料</li>
+            <li class="nav-item">验收资料</li>
+            <li class="nav-item">竣工资料</li>
+            <li class="nav-item">完工入库资料</li>
+            <li class="nav-item">结算资料</li>
+            <li class="nav-item">申请进度款资料（60%）</li>
+            <li class="nav-item">申请结算款资料（97%）</li>
+            <li class="nav-item">申请质保金资料（3%）</li>
+        </ul>
+    </div>
+</body>
+</html>
