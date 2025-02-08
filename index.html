@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>项目管理表</title>
+    <style>
+        /* 原有样式保持不变 */
+        /* 新增导出按钮样式 */
+        .export-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>项目管理表</h2>
+        
+        <!-- 新增导出按钮 -->
+        <button onclick="exportToCSV()" class="export-btn">导出CSV</button>
+
+        <!-- 原有表单和表格保持不变 -->
+
+        <script>
+            // 原有JavaScript代码保持不变
+
+            // 新增导出CSV功能
+            function exportToCSV() {
+                // 获取表格数据
+                const rows = document.querySelectorAll("#tableBody tr");
+                const csvContent = [];
+                
+                // 添加表头
+                const headers = ["项目编号", "合同编号", "合同名称", "项目阶段"];
+                csvContent.push(headers.join(','));
+
+                // 遍历每一行
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll("td");
+                    const rowData = [];
+                    
+                    // 前四个单元格（排除最后的操作列）
+                    for (let i = 0; i < 4; i++) {
+                        let cellContent = cells[i].textContent;
+                        // 处理可能包含逗号的情况
+                        if (cellContent.includes(",")) {
+                            cellContent = `"${cellContent}"`;
+                        }
+                        rowData.push(cellContent);
+                    }
+                    
+                    csvContent.push(rowData.join(','));
+                });
+
+                // 创建CSV文件
+                const csvString = csvContent.join('\n');
+                const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.href = url;
+                link.download = "projects.csv";
+                document.body.appendChild(link);
+                link.click();
+                
+                // 清理
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        </script>
+    </div>
+</body>
+</html>
