@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>项目管理表</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .add-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .del-btn {
+            background-color: #ff4444;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        input, select {
+            padding: 5px;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>项目管理表</h2>
+        
+        <!-- 输入表单 -->
+        <form id="inputForm">
+            <label for="projectNumber">项目编号:</label>
+            <input type="text" id="projectNumber" required>
+            
+            <label for="contractNumber">合同编号:</label>
+            <input type="text" id="contractNumber" required>
+            
+            <label for="contractName">合同名称:</label>
+            <input type="text" id="contractName" required>
+            
+            <label for="projectPhase">项目阶段:</label>
+            <select id="projectPhase">
+                <option value="">请选择</option>
+                <option value="签合同">签合同</option>
+                <option value="施工中">施工中</option>
+                <option value="验收后">验收后</option>
+                <option value="完工入库">完工入库</option>
+                <option value="交工资料">交工资料</option>
+                <option value="申请60%进度款">申请60%进度款</option>
+                <option value="申请97%进度款">申请97%进度款</option>
+                <option value="申请3%质保金">申请3%质保金</option>
+            </select>
+            
+            <button type="button" onclick="addRow()" class="add-btn">
+                添加行
+            </button>
+        </form>
+
+        <!-- 表格 -->
+        <table id="projectTable">
+            <thead>
+                <tr>
+                    <th>项目编号</th>
+                    <th>合同编号</th>
+                    <th>合同名称</th>
+                    <th>项目阶段</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- 初始数据 -->
+                <tr>
+                    <td contenteditable="true">P001</td>
+                    <td contenteditable="true">C001</td>
+                    <td contenteditable="true">项目A</td>
+                    <td contenteditable="true">签合同</td>
+                    <td><button onclick="deleteRow(this)">删除</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // 存储所有行数据
+        let rows = [];
+
+        // 添加新行
+        function addRow() {
+            const projectNumber = document.getElementById('projectNumber').value;
+            const contractNumber = document.getElementById('contractNumber').value;
+            const contractName = document.getElementById('contractName').value;
+            const projectPhase = document.getElementById('projectPhase').value;
+
+            if (!projectNumber || !contractNumber || !contractName || !projectPhase) {
+                alert("请填写所有必填信息");
+                return;
+            }
+
+            // 创建新行
+            const newRow = document.createElement('tr');
+            
+            // 项目编号
+            const td1 = document.createElement('td');
+            td1.contentEditable = true;
+            td1.textContent = projectNumber;
+            newRow.appendChild(td1);
+
+            // 合同编号
+            const td2 = document.createElement('td');
+            td2.contentEditable = true;
+            td2.textContent = contractNumber;
+            newRow.appendChild(td2);
+
+            // 合同名称
+            const td3 = document.createElement('td');
+            td3.contentEditable = true;
+            td3.textContent = contractName;
+            newRow.appendChild(td3);
+
+            // 项目阶段
+            const td4 = document.createElement('td');
+            td4.contentEditable = true;
+            td4.textContent = projectPhase;
+            newRow.appendChild(td4);
+
+            // 删除按钮
+            const td5 = document.createElement('td');
+            const delBtn = document.createElement('button');
+            delBtn.textContent = "删除";
+            delBtn.onclick = function() { deleteRow(delBtn); };
+            td5.appendChild(delBtn);
+            newRow.appendChild(td5);
+
+            // 将新行添加到表格中
+            const tableBody = document.getElementById('tableBody');
+            tableBody.appendChild(newRow);
+
+            // 清空输入框
+            document.getElementById('projectNumber').value = '';
+            document.getElementById('contractNumber').value = '';
+            document.getElementById('contractName').value = '';
+            document.getElementById('projectPhase').value = '';
+
+            // 将新行数据存储到数组中
+            rows.push({
+                projectNumber,
+                contractNumber,
+                contractName,
+                projectPhase
+            });
+        }
+
+        // 删除行
+        function deleteRow(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
+        }
+
+        // 编辑阶段信息
+        document.getElementById('projectTable').addEventListener('input', function(e) {
+            if (e.target.tagName === 'TD') {
+                e.target.style.backgroundColor = '#f0f0f0';
+                setTimeout(() => {
+                    e.target.style.backgroundColor = '';
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
