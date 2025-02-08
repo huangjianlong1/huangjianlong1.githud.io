@@ -87,6 +87,7 @@
                 <th>开票60%金额</th>
                 <th>开票97%金额</th>
                 <th>开票3%金额</th>
+                <th>项目情况</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -113,7 +114,7 @@
             const newRow = document.createElement('tr');
             
             // 创建各列
-            ['项目编号', '合同编号', '合同名称', '项目阶段'].forEach((label, index) => {
+            ['项目编号', '合同编号', '合同名称', '项目阶段', '开工日期', '完工日期', '验收日期', '合同金额', '入库金额', '结算金额', '开票60%金额', '开票97%金额', '开票3%金额', '项目情况'].forEach((label, index) => {
                 const td = document.createElement('td');
                 td.contentEditable = true;
                 td.textContent = [projectNumber, contractNumber, contractName, projectPhase][index];
@@ -154,7 +155,7 @@
         // 新增导出功能
         function exportToCSV() {
             const csvContent = [
-                ['项目编号', '合同编号', '合同名称','合同金额','入库金额','结算金额','开票60%金额','开票97%金额','开票3%金额' ].join(','),
+                ['项目编号', '合同编号', '合同名称','合同金额','入库金额','结算金额','开票60%金额','开票97%金额','开票3%金额','项目情况'  ].join(','),
                 ...rows.map(row => Object.values(row).join(','))
             ].join('\n');
 
@@ -178,7 +179,7 @@
         rows.forEach(row => {
             const newRow = document.createElement('tr');
             
-            ['项目编号', '合同编号', '合同名称','合同金额','入库金额','结算金额','开票60%金额','开票97%金额','开票3%金额' ].forEach((label, index) => {
+            ['项目编号', '合同编号', '合同名称','合同金额','入库金额','结算金额','开票60%金额','开票97%金额','开票3%金额','项目情况'  ].forEach((label, index) => {
                 const td = document.createElement('td');
                 td.contentEditable = true;
                 td.textContent = [row.projectNumber, row.contractNumber, row.contractName, row.projectPhase][index];
