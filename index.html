@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CH">
 <head>
     <meta charset="UTF-8">
-    <title>管信资料 - 签合同</title>
+    <title>管信资料 - 多个二级菜单</title>
     <style>
         /* 基本样式 */
         body {
@@ -57,38 +57,37 @@
         }
 
         .sub-menu li {
-            padding: 8px 15px;
+            margin-bottom: 5px;
         }
 
         .sub-menu a {
-            text-decoration: none;
             color: #333;
-            display: block;
+            text-decoration: none;
         }
 
-        .sub-menu a:hover {
-            background-color: #f8f9fa;
-            color: #007bff;
-        }
-
-        /* 显示二级菜单 */
+        /* 当鼠标悬停在一级菜单项上时显示子菜单 */
         .nav-item:hover > .sub-menu {
             display: block;
         }
     </style>
 </head>
 <body>
-    <div class="nav-container">
+    <nav class="nav-container">
         <ul class="nav-menu">
             <li class="nav-item">
                 <a href="#" class="nav-link">管信资料</a>
                 <ul class="sub-menu">
-                    <li><a href="#">签合同</a></li>
-                    <!-- 可以添加更多二级菜单项 -->
+                    <li><a href="#">施工前准备资料</a></li>
+                    <li><a href="#">验收资料</a></li>
+                    <li><a href="#">竣工资料</a></li>
+                    <li><a href="#">完工入库资料</a></li>
+                    <li><a href="#">结算资料</a></li>
+                    <li><a href="#">申请进度款资料（60%）</a></li>
+                    <li><a href="#">申请结算款资料（97%）</a></li>
+                    <li><a href="#">申请质保金资料（3%）</a></li>
                 </ul>
             </li>
-            <!-- 可以添加更多一级菜单项 -->
         </ul>
-    </div>
+    </nav>
 </body>
 </html>
