@@ -27,7 +27,7 @@
             background-color: #f5f5f5;
         }
 
-        .input-group {
+       .input-group {
             margin-bottom: 20px;
         }
 
@@ -49,13 +49,12 @@
             background-color: #45a049;
         }
 
-        .export-btn {
+       .export-btn {
             background-color: #2196F3;
-96F3;
             padding: 5px 15px;
         }
 
-        .filter-group {
+       .filter-group {
             margin-bottom: 20px;
         }
 
@@ -78,6 +77,7 @@
             border-radius: 5px;
             overflow: hidden;
             margin: 5px auto;
+            position: relative;
         }
 
        .progress-bar-fill {
@@ -91,6 +91,26 @@
 
        .progress-bar-fill.complete {
             background-color: #27ae60; /* 完成时的绿色 */
+        }
+
+        /* 进度条编辑时的输入框样式 */
+       .progress-edit-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: none;
+            text-align: center;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+       .progress-bar:hover.progress-edit-input,
+       .progress-edit-active.progress-edit-input {
+            opacity: 1;
         }
     </style>
     <!-- 引入 SheetJS 库 -->
@@ -194,7 +214,35 @@
                     progressBarFill.className = `progress-bar-fill ${col === 1? 'complete' : ''}`;
                     progressBarFill.style.width = `${col * 100}%`;
                     progressBarFill.textContent = `${(col * 100).toFixed(0)}%`;
+
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = 0;
+                    input.max = 1;
+                    input.step = 0.01;
+                    input.value = col;
+                    input.className = 'progress-edit-input';
+                    input.style.opacity = '0';
+
                     progressBar.appendChild(progressBarFill);
+                    progressBar.appendChild(input);
+
+                    input.addEventListener('focusout', function () {
+                        const newProgress = parseFloat(this.value);
+                        if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 1) {
+                            progressBarFill.style.width = `${newProgress * 100}%`;
+                            progressBarFill.textContent = `${(newProgress * 100).toFixed(0)}%`;
+                            progressBarFill.className = `progress-bar-fill ${newProgress === 1? 'complete' : ''}`;
+                        } else {
+                            this.value = col;
+                        }
+                    });
+
+                    progressBar.addEventListener('click', function () {
+                        input.style.opacity = '1';
+                        input.focus();
+                    });
+
                     td.appendChild(progressBar);
                 } else {
                     td.textContent = col;
@@ -335,7 +383,35 @@
                             progressBarFill.className = `progress-bar-fill ${col === 1? 'complete' : ''}`;
                             progressBarFill.style.width = `${col * 100}%`;
                             progressBarFill.textContent = `${(col * 100).toFixed(0)}%`;
+
+                            const input = document.createElement('input');
+                            input.type = 'number';
+                            input.min = 0;
+                            input.max = 1;
+                            input.step = 0.01;
+                            input.value = col;
+                            input.className = 'progress-edit-input';
+                            input.style.opacity = '0';
+
                             progressBar.appendChild(progressBarFill);
+                            progressBar.appendChild(input);
+
+                            input.addEventListener('focusout', function () {
+                                const newProgress = parseFloat(this.value);
+                                if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 1) {
+                                    progressBarFill.style.width = `${newProgress * 100}%`;
+                                    progressBarFill.textContent = `${(newProgress * 100).toFixed(0)}%`;
+                                    progressBarFill.className = `progress-bar-fill ${newProgress === 1? 'complete' : ''}`;
+                                } else {
+                                    this.value = col;
+                                }
+                            });
+
+                            progressBar.addEventListener('click', function () {
+                                input.style.opacity = '1';
+                                input.focus();
+                            });
+
                             td.appendChild(progressBar);
                         } else {
                             td.textContent = col;
