@@ -254,8 +254,8 @@
 
             let totalContractAmount = 0;
             let totalSubcontractAmount = 0;
-            let inProgressCount = 0;
-            let completedCount = 0;
+            let inProgressContractAmount = 0;
+            let completedContractAmount = 0;
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
@@ -267,19 +267,24 @@
 
                 if ((!monthFilter || currentMonth === monthFilter) &&
                     (!projectFilter || project === projectFilter)) {
+                    totalContractAmount += contractAmount;
+                    totalSubcontractAmount += subcontractAmount;
                     if (!progressFilter || (progressFilter === '进行中' && progress!== '100%') || (progressFilter === '已完成' && progress === '100%')) {
-                        totalContractAmount += contractAmount;
-                        totalSubcontractAmount += subcontractAmount;
                         if (progress === '100%') {
-                            completedCount++;
+                            completedContractAmount += contractAmount;
                         } else {
-                            inProgressCount++;
+                            inProgressContractAmount += contractAmount;
                         }
                     }
                 }
             });
 
-            return { totalContractAmount, totalSubcontractAmount, inProgressCount, completedCount };
+            return { 
+                totalContractAmount, 
+                totalSubcontractAmount, 
+                inProgressContractAmount, 
+                completedContractAmount 
+            };
         }
 
         // 生成动态图表（饼状图）
@@ -291,8 +296,8 @@
                 data: {
                     labels: ['进行中', '已完成'],
                     datasets: [{
-                        label: '项目数量',
-                        data: [summary.inProgressCount, summary.completedCount],
+                        label: '总包金额',
+                        data: [summary.inProgressContractAmount, summary.completedContractAmount],
                         backgroundColor: ['#f1c40f', '#27ae60'],
                         hoverOffset: 4
                     }]
@@ -304,7 +309,7 @@
         function updateSummary() {
             const summaryData = document.getElementById('summaryData');
             const summary = summarizeData();
-            summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalContractAmount.toFixed(2)}<br>汇总分包金额: ${summary.totalSubcontractAmount.toFixed(2)}<br>进行中项目数: ${summary.inProgressCount}<br>已完成项目数: ${summary.completedCount}</p>`;
+            summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalContractAmount.toFixed(2)}<br>汇总分包金额: ${summary.totalSubcontractAmount.toFixed(2)}<br>进行中总包金额: ${summary.inProgressContractAmount.toFixed(2)}<br>已完成总包金额: ${summary.completedContractAmount.toFixed(2)}</p>`;
             generateChart();
         }
 
