@@ -128,12 +128,6 @@
             margin: 5px;
         }
 
-        /* 图表容器样式 */
-       .chart-container {
-            width: 400px;
-            margin: 20px auto;
-        }
-
         /* 汇总表样式 */
        .summary-table {
             width: 300px;
@@ -142,8 +136,6 @@
     </style>
     <!-- 引入 SheetJS 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- 引入 Chart.js 库 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -163,19 +155,35 @@
                 <option value="已完成">已完成</option>
             </select>
         </div>
-        <div class="chart-container">
-            <canvas id="summaryChart"></canvas>
-        </div>
         <div class="summary-table">
-            <table id="summaryTable">
+            <table id="totalContractSummary">
                 <thead>
                     <tr>
-                        <th>分类</th>
-                        <th>金额</th>
+                        <th colspan="3">总包请款金额汇总</th>
+                    </tr>
+                    <tr>
+                        <th>类型</th>
                         <th>数量</th>
+                        <th>金额</th>
                     </tr>
                 </thead>
-                <tbody id="summaryTableBody">
+                <tbody id="totalContractBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="summary-table">
+            <table id="subcontractSummary">
+                <thead>
+                    <tr>
+                        <th colspan="3">分包请款金额汇总</th>
+                    </tr>
+                    <tr>
+                        <th>类型</th>
+                        <th>数量</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody id="subcontractBody">
                 </tbody>
             </table>
         </div>
@@ -270,12 +278,14 @@
             const projectFilter = document.getElementById('projectSlicer').value;
             const progressFilter = document.getElementById('progressSlicer').value;
 
-            let totalContractAmount = 0;
-            let totalSubcontractAmount = 0;
-            let inProgressContractAmount = 0;
-            let completedContractAmount = 0;
-            let inProgressCount = 0;
-            let completedCount = 0;
+            let totalContractInProgressAmount = 0;
+            let totalContractCompletedAmount = 0;
+            let subcontractInProgressAmount = 0;
+            let subcontractCompletedAmount = 0;
+            let totalContractInProgressCount = 0;
+            let totalContractCompletedCount = 0;
+            let subcontractInProgressCount = 0;
+            let subcontractCompletedCount = 0;
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
@@ -285,64 +295,54 @@
                 const contractAmount = parseFloat(cells[9].textContent);
                 const subcontractAmount = parseFloat(cells[10].textContent);
 
-                if ((!monthFilter || currentMonth === monthFilter) &&
-                    (!projectFilter || project === projectFilter)) {
-                    totalContractAmount += contractAmount;
-                    totalSubcontractAmount += subcontractAmount;
+                if ((!monthFilter || currentMonth === monthFilter) && (!projectFilter || project === projectFilter)) {
                     if (!progressFilter || (progressFilter === '进行中' && progress!== '100%') || (progressFilter === '已完成' && progress === '100%')) {
                         if (progress === '100%') {
-                            completedContractAmount += contractAmount;
-                            completedCount++;
+                            totalContractCompletedAmount += contractAmount;
+                            subcontractCompletedAmount += subcontractAmount;
+                            totalContractCompletedCount++;
+                            subcontractCompletedCount++;
                         } else {
-                            inProgressContractAmount += contractAmount;
-                            inProgressCount++;
+                            totalContractInProgressAmount += contractAmount;
+                            subcontractInProgressAmount += subcontractAmount;
+                            totalContractInProgressCount++;
+                            subcontractInProgressCount++;
                         }
                     }
                 }
             });
 
             return {
-                totalContractAmount,
-                totalSubcontractAmount,
-                inProgressContractAmount,
-                completedContractAmount,
-                inProgressCount,
-                completedCount
+                totalContractInProgressAmount,
+                totalContractCompletedAmount,
+                totalContractInProgressCount,
+                totalContractCompletedCount,
+                subcontractInProgressAmount,
+                subcontractCompletedAmount,
+                subcontractInProgressCount,
+                subcontractCompletedCount
             };
         }
 
-        // 生成动态图表（饼状图）
-        function generateChart() {
-            const ctx = document.getElementById('summaryChart').getContext('2d');
-            const summary = summarizeData();
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['进行中', '已完成'],
-                    datasets: [{
-                        label: '总包金额',
-                        data: [summary.inProgressContractAmount, summary.completedContractAmount],
-                        backgroundColor: ['#f1c40f', '#27ae60'],
-                        hoverOffset: 4
-                    }]
-                }
-            });
-        }
-
-        // 更新汇总数据和图表
+        // 更新汇总数据和表格
         function updateSummary() {
-            const summaryTableBody = document.getElementById('summaryTableBody');
+            const totalContractBody = document.getElementById('totalContractBody');
+            const subcontractBody = document.getElementById('subcontractBody');
             const summary = summarizeData();
 
-            // 更新汇总表
-            summaryTableBody.innerHTML = `
-                <tr><td>汇总总包金额</td><td>${summary.totalContractAmount.toFixed(2)}</td><td>-</td></tr>
-                <tr><td>汇总分包金额</td><td>${summary.totalSubcontractAmount.toFixed(2)}</td><td>-</td></tr>
-                <tr><td>进行中总包金额</td><td>${summary.inProgressContractAmount.toFixed(2)}</td><td>${summary.inProgressCount}</td></tr>
-                <tr><td>已完成总包金额</td><td>${summary.completedContractAmount.toFixed(2)}</td><td>${summary.completedCount}</td></tr>
+            // 总包请款金额汇总
+            totalContractBody.innerHTML = `
+                <tr><td>进行中</td><td>${summary.totalContractInProgressCount}</td><td>${summary.totalContractInProgressAmount.toFixed(2)}</td></tr>
+                <tr><td>已完成</td><td>${summary.totalContractCompletedCount}</td><td>${summary.totalContractCompletedAmount.toFixed(2)}</td></tr>
+                <tr><td>合计</td><td>${summary.totalContractInProgressCount + summary.totalContractCompletedCount}</td><td>${(summary.totalContractInProgressAmount + summary.totalContractCompletedAmount).toFixed(2)}</td></tr>
             `;
 
-            generateChart();
+            // 分包请款金额汇总
+            subcontractBody.innerHTML = `
+                <tr><td>进行中</td><td>${summary.subcontractInProgressCount}</td><td>${summary.subcontractInProgressAmount.toFixed(2)}</td></tr>
+                <tr><td>已完成</td><td>${summary.subcontractCompletedCount}</td><td>${summary.subcontractCompletedAmount.toFixed(2)}</td></tr>
+                <tr><td>合计</td><td>${summary.subcontractInProgressCount + summary.subcontractCompletedCount}</td><td>${(summary.subcontractInProgressAmount + summary.subcontractCompletedAmount).toFixed(2)}</td></tr>
+            `;
         }
 
         // 切片器事件监听
