@@ -163,7 +163,6 @@
                 <option value="已完成">已完成</option>
             </select>
         </div>
-        <div id="summaryData"></div>
         <div class="chart-container">
             <canvas id="summaryChart"></canvas>
         </div>
@@ -173,6 +172,7 @@
                     <tr>
                         <th>分类</th>
                         <th>金额</th>
+                        <th>数量</th>
                     </tr>
                 </thead>
                 <tbody id="summaryTableBody">
@@ -274,6 +274,8 @@
             let totalSubcontractAmount = 0;
             let inProgressContractAmount = 0;
             let completedContractAmount = 0;
+            let inProgressCount = 0;
+            let completedCount = 0;
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
@@ -290,8 +292,10 @@
                     if (!progressFilter || (progressFilter === '进行中' && progress!== '100%') || (progressFilter === '已完成' && progress === '100%')) {
                         if (progress === '100%') {
                             completedContractAmount += contractAmount;
+                            completedCount++;
                         } else {
                             inProgressContractAmount += contractAmount;
+                            inProgressCount++;
                         }
                     }
                 }
@@ -301,7 +305,9 @@
                 totalContractAmount,
                 totalSubcontractAmount,
                 inProgressContractAmount,
-                completedContractAmount
+                completedContractAmount,
+                inProgressCount,
+                completedCount
             };
         }
 
@@ -325,18 +331,15 @@
 
         // 更新汇总数据和图表
         function updateSummary() {
-            const summaryData = document.getElementById('summaryData');
             const summaryTableBody = document.getElementById('summaryTableBody');
             const summary = summarizeData();
 
-            summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalContractAmount.toFixed(2)}<br>汇总分包金额: ${summary.totalSubcontractAmount.toFixed(2)}<br>进行中总包金额: ${summary.inProgressContractAmount.toFixed(2)}<br>已完成总包金额: ${summary.completedContractAmount.toFixed(2)}</p>`;
-
             // 更新汇总表
             summaryTableBody.innerHTML = `
-                <tr><td>汇总总包金额</td><td>${summary.totalContractAmount.toFixed(2)}</td></tr>
-                <tr><td>汇总分包金额</td><td>${summary.totalSubcontractAmount.toFixed(2)}</td></tr>
-                <tr><td>进行中总包金额</td><td>${summary.inProgressContractAmount.toFixed(2)}</td></tr>
-                <tr><td>已完成总包金额</td><td>${summary.completedContractAmount.toFixed(2)}</td></tr>
+                <tr><td>汇总总包金额</td><td>${summary.totalContractAmount.toFixed(2)}</td><td>-</td></tr>
+                <tr><td>汇总分包金额</td><td>${summary.totalSubcontractAmount.toFixed(2)}</td><td>-</td></tr>
+                <tr><td>进行中总包金额</td><td>${summary.inProgressContractAmount.toFixed(2)}</td><td>${summary.inProgressCount}</td></tr>
+                <tr><td>已完成总包金额</td><td>${summary.completedContractAmount.toFixed(2)}</td><td>${summary.completedCount}</td></tr>
             `;
 
             generateChart();
