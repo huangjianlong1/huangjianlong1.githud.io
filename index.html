@@ -63,8 +63,8 @@
         }
 
         /* 黄色背景列样式（根据新布局调整） */
-        th:nth-child(4),
-        th:nth-child(6),
+        th:nth-child(3),
+        th:nth-child(5),
         th:nth-child(7) {
             background-color: #ffff00;
             /* 黄色 */
@@ -153,9 +153,8 @@
             </select>
             <select id="progressSlicer">
                 <option value="">所有进度</option>
-                <option value="0.5">50%</option>
-                <option value="0.7">70%</option>
-                <!-- 可根据实际进度值扩展 -->
+                <option value="进行中">进行中</option>
+                <option value="已完成">已完成</option>
             </select>
         </div>
         <div id="summaryData"></div>
@@ -227,11 +226,16 @@
             });
         }
 
-        // 初始化项目切片器选项（假设项目从数据中动态获取，这里简单示例）
+        // 初始化项目切片器选项（从表格数据动态获取）
         function initProjectSlicer() {
             const projectSlicer = document.getElementById('projectSlicer');
-            // 实际应用中从表格数据提取唯一项目填充
-            const projects = ['传输']; // 示例项目
+            const projects = new Set();
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const project = row.cells[2].textContent;
+                projects.add(project);
+            });
             projects.forEach(project => {
                 const option = document.createElement('option');
                 option.value = project;
@@ -248,49 +252,50 @@
             const projectFilter = document.getElementById('projectSlicer').value;
             const progressFilter = document.getElementById('progressSlicer').value;
 
-            let totalAmount = 0;
-            let count = 0;
+            let totalContractAmount = 0;
+            let totalSubcontractAmount = 0;
+            let inProgressCount = 0;
+            let completedCount = 0;
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 const currentMonth = cells[1].textContent;
                 const project = cells[2].textContent;
-                const progress = parseFloat(cells[7].textContent.replace('%', '')) / 100;
-                const amount = parseFloat(cells[9].textContent);
+                const progress = cells[7].textContent;
+                const contractAmount = parseFloat(cells[9].textContent);
+                const subcontractAmount = parseFloat(cells[10].textContent);
 
                 if ((!monthFilter || currentMonth === monthFilter) &&
-                    (!projectFilter || project === projectFilter) &&
-                    (!progressFilter || progress.toString() === progressFilter)) {
-                    totalAmount += amount;
-                    count++;
+                    (!projectFilter || project === projectFilter)) {
+                    if (!progressFilter || (progressFilter === '进行中' && progress!== '100%') || (progressFilter === '已完成' && progress === '100%')) {
+                        totalContractAmount += contractAmount;
+                        totalSubcontractAmount += subcontractAmount;
+                        if (progress === '100%') {
+                            completedCount++;
+                        } else {
+                            inProgressCount++;
+                        }
+                    }
                 }
             });
 
-            return { totalAmount, count };
+            return { totalContractAmount, totalSubcontractAmount, inProgressCount, completedCount };
         }
 
-        // 生成动态图表
+        // 生成动态图表（饼状图）
         function generateChart() {
             const ctx = document.getElementById('summaryChart').getContext('2d');
             const summary = summarizeData();
             new Chart(ctx, {
-                type: 'bar',
+                type: 'pie',
                 data: {
-                    labels: ['汇总总包金额'],
+                    labels: ['进行中', '已完成'],
                     datasets: [{
-                        label: '金额',
-                        data: [summary.totalAmount],
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
+                        label: '项目数量',
+                        data: [summary.inProgressCount, summary.completedCount],
+                        backgroundColor: ['#f1c40f', '#27ae60'],
+                        hoverOffset: 4
                     }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
                 }
             });
         }
@@ -299,7 +304,7 @@
         function updateSummary() {
             const summaryData = document.getElementById('summaryData');
             const summary = summarizeData();
-            summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalAmount.toFixed(2)}<br>记录数: ${summary.count}</p>`;
+            summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalContractAmount.toFixed(2)}<br>汇总分包金额: ${summary.totalSubcontractAmount.toFixed(2)}<br>进行中项目数: ${summary.inProgressCount}<br>已完成项目数: ${summary.completedCount}</p>`;
             generateChart();
         }
 
@@ -325,8 +330,8 @@
                         rowData['项目名称'],
                         rowData['请款人员'],
                         rowData['任务进程'],
-                        parseFloat(rowData['完成进度']) * 100, // 显示为百分比
-                        parseFloat(rowData['请款进度']) * 100, // 显示为百分比
+                        rowData['完成进度'] * 100, // 显示为百分比
+                        rowData['请款进度'] * 100, // 显示为百分比
                         rowData['总包金额'],
                         rowData['分包金额']
                     ];
