@@ -133,6 +133,12 @@
             width: 400px;
             margin: 20px auto;
         }
+
+        /* 汇总表样式 */
+       .summary-table {
+            width: 300px;
+            margin: 20px auto;
+        }
     </style>
     <!-- 引入 SheetJS 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -160,6 +166,18 @@
         <div id="summaryData"></div>
         <div class="chart-container">
             <canvas id="summaryChart"></canvas>
+        </div>
+        <div class="summary-table">
+            <table id="summaryTable">
+                <thead>
+                    <tr>
+                        <th>分类</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody">
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -279,11 +297,11 @@
                 }
             });
 
-            return { 
-                totalContractAmount, 
-                totalSubcontractAmount, 
-                inProgressContractAmount, 
-                completedContractAmount 
+            return {
+                totalContractAmount,
+                totalSubcontractAmount,
+                inProgressContractAmount,
+                completedContractAmount
             };
         }
 
@@ -308,8 +326,19 @@
         // 更新汇总数据和图表
         function updateSummary() {
             const summaryData = document.getElementById('summaryData');
+            const summaryTableBody = document.getElementById('summaryTableBody');
             const summary = summarizeData();
+
             summaryData.innerHTML = `<p>汇总总包金额: ${summary.totalContractAmount.toFixed(2)}<br>汇总分包金额: ${summary.totalSubcontractAmount.toFixed(2)}<br>进行中总包金额: ${summary.inProgressContractAmount.toFixed(2)}<br>已完成总包金额: ${summary.completedContractAmount.toFixed(2)}</p>`;
+
+            // 更新汇总表
+            summaryTableBody.innerHTML = `
+                <tr><td>汇总总包金额</td><td>${summary.totalContractAmount.toFixed(2)}</td></tr>
+                <tr><td>汇总分包金额</td><td>${summary.totalSubcontractAmount.toFixed(2)}</td></tr>
+                <tr><td>进行中总包金额</td><td>${summary.inProgressContractAmount.toFixed(2)}</td></tr>
+                <tr><td>已完成总包金额</td><td>${summary.completedContractAmount.toFixed(2)}</td></tr>
+            `;
+
             generateChart();
         }
 
