@@ -5,22 +5,19 @@
     <meta charset="UTF-8">
     <title>项目管理表 - 实时协作版</title>
     <style>
-        <!-- 原有 CSS 样式保持不变 -->
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
         }
         /* ... 中间样式省略 ... */
     </style>
-    <!-- 引入 Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+    <!-- 引入腾讯云 CloudBase SDK -->
+    <script src="https://unpkg.com/@cloudbase/js-sdk@latest/dist/tcb.js"></script>
     <!-- 引入 SheetJS 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
-    <!-- 原有 HTML 结构保持不变 -->
     <!-- 汇总区域 -->
     <div class="summary-section">
         <!-- ... 中间结构省略 ... -->
@@ -38,31 +35,35 @@
     </table>
 
     <script>
-        // -------------------- Firebase 初始化 --------------------
-        const firebaseConfig = {
-            apiKey: "你的 Firebase API Key",
-            authDomain: "你的项目域名",
-            databaseURL: "你的数据库 URL",
-            projectId: "你的项目 ID",
-            storageBucket: "你的存储桶",
-            messagingSenderId: "你的发送者 ID",
-            appId: "你的应用 ID"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const tableRef = db.ref('projectTable'); // 数据库中的表名
+        // -------------------- 腾讯云 CloudBase 初始化 --------------------
+        const app = tcb.init({
+            env: '你的 CloudBase 环境 ID'
+        });
+        const db = app.database();
+        const tableRef = db.collection('projectTable'); // 数据库中的集合名
 
         // -------------------- 全局变量 --------------------
-        let currentRows = {}; // 存储当前行数据（Firebase 键: 行数据）
+        let currentRows = {}; // 存储当前行数据（CloudBase 文档 ID: 行数据）
 
         // -------------------- 初始化渲染 --------------------
         function initRender() {
             // 监听数据库实时更新
-            tableRef.on('value', (snapshot) => {
-                currentRows = snapshot.val() || {};
-                renderTable(currentRows); // 渲染表格
-                initProjectSlicer(); // 初始化项目筛选
-                updateSummary(); // 更新汇总
+            tableRef.where({}).watch({
+                onChange: (snapshot) => {
+                    snapshot.docChanges.forEach(change => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            currentRows[change.doc._id] = change.doc;
+                        } else if (change.type === 'removed') {
+                            delete currentRows[change.doc._id];
+                        }
+                    });
+                    renderTable(currentRows); // 渲染表格
+                    initProjectSlicer(); // 初始化项目筛选
+                    updateSummary(); // 更新汇总
+                },
+                onError: (err) => {
+                    console.error('监听数据库更新出错:', err);
+                }
             });
         }
 
@@ -75,8 +76,8 @@
                 const rowData = data[key];
                 const newRow = document.createElement('tr');
                 
-                // 绑定行删除事件（通过自定义属性存储 Firebase 键）
-                newRow.dataset.firebaseKey = key;
+                // 绑定行删除事件（通过自定义属性存储 CloudBase 文档 ID）
+                newRow.dataset.cloudbaseId = key;
                 newRow.onclick = function(e) {
                     if (e.target.tagName === 'TD' && e.target.contentEditable) return; // 跳过可编辑单元格
                     deleteRow(this); // 点击行删除
@@ -139,18 +140,20 @@
             return progressBar;
         }
 
-        // -------------------- 更新单元格数据到 Firebase --------------------
+        // -------------------- 更新单元格数据到腾讯云 CloudBase --------------------
         function updateCell(key, colName, value, index) {
             // 处理进度条的百分比转换
             const updatedValue = (index === 7 || index === 8)? 
                 parseFloat(value) : value;
             
-            tableRef.child(key).update({
+            tableRef.doc(key).update({
                 [colName]: updatedValue
+            }).catch(err => {
+                console.error('更新单元格数据出错:', err);
             });
         }
 
-        // -------------------- 添加行功能（整合 Firebase）--------------------
+        // -------------------- 添加行功能（整合腾讯云 CloudBase）--------------------
         function addRow() {
             const inputFields = [
                 'currentMonth', 'project', 'contractNumber', 'projectName',
@@ -165,8 +168,6 @@
                 return;
             }
 
-            // 生成 Firebase 唯一键
-            const newKey = tableRef.push().key;
             const newRowData = {
                 序号: Object.keys(currentRows).length + 1,
                 当前月份: values[0],
@@ -181,19 +182,25 @@
                 分包金额: values[9]
             };
 
-            tableRef.child(newKey).set(newRowData); // 写入数据库
+            tableRef.add(newRowData).then(res => {
+                currentRows[res.id] = newRowData;
+            }).catch(err => {
+                console.error('添加行数据出错:', err);
+            });
 
             // 清空输入框
             inputFields.forEach(id => document.getElementById(id).value = '');
         }
 
-        // -------------------- 删除行功能（整合 Firebase）--------------------
+        // -------------------- 删除行功能（整合腾讯云 CloudBase）--------------------
         function deleteRow(row) {
-            const key = row.dataset.firebaseKey;
-            tableRef.child(key).remove(); // 从数据库删除
+            const key = row.dataset.cloudbaseId;
+            tableRef.doc(key).remove().catch(err => {
+                console.error('删除行数据出错:', err);
+            });
         }
 
-        // -------------------- 数据导入（写入 Firebase）--------------------
+        // -------------------- 数据导入（写入腾讯云 CloudBase）--------------------
         function importXLSX() {
             const file = document.getElementById('importFile').files[0];
             if (!file) return;
@@ -205,8 +212,7 @@
                 
                 // 批量写入数据库
                 data.forEach(row => {
-                    const newKey = tableRef.push().key;
-                    tableRef.child(newKey).set({
+                    tableRef.add({
                         序号: row.序号,
                         当前月份: row.当前月份,
                         项目: row.项目,
@@ -218,6 +224,8 @@
                         请款进度: parseFloat(row.请款进度),
                         总包金额: row.总包金额,
                         分包金额: row.分包金额
+                    }).catch(err => {
+                        console.error('导入数据出错:', err);
                     });
                 });
             };
@@ -245,7 +253,7 @@
         // 分类汇总函数（从表格实时数据计算）
         function summarizeData() { /* 原有代码不变，依赖实时渲染的表格数据 */ }
 
-        // 页面加载时初始化 Firebase 监听
+        // 页面加载时初始化腾讯云 CloudBase 监听
         window.addEventListener('load', () => {
             initMonthSlicer();
             initRender(); // 替换原本地存储加载
@@ -264,3 +272,4 @@
 </body>
 
 </html>
+    
