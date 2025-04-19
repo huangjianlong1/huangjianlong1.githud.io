@@ -116,6 +116,8 @@
         /* 汇总区域样式 */
        .summary-section {
             margin: 20px 0;
+            display: flex;
+            gap: 20px;
         }
 
         /* 切片器样式 */
@@ -131,7 +133,8 @@
         /* 汇总表样式 */
        .summary-table {
             width: 300px;
-            margin: 20px auto;
+            margin: 0;
+            flex: 1;
         }
     </style>
     <!-- 引入 SheetJS 库 -->
@@ -255,11 +258,12 @@
         // 初始化项目切片器选项（从表格数据动态获取）
         function initProjectSlicer() {
             const projectSlicer = document.getElementById('projectSlicer');
+            projectSlicer.innerHTML = '<option value="">所有项目</option>'; // 先清空
             const projects = new Set();
             const tableBody = document.getElementById('tableBody');
             const rows = tableBody.querySelectorAll('tr');
             rows.forEach(row => {
-                const project = row.cells[2].textContent;
+                const project = row.cells[1].textContent; // 项目列是第二列（索引1）
                 projects.add(project);
             });
             projects.forEach(project => {
@@ -289,8 +293,8 @@
 
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
-                const currentMonth = cells[1].textContent;
-                const project = cells[2].textContent;
+                const currentMonth = cells[0].textContent;
+                const project = cells[1].textContent; // 项目列
                 const progress = cells[7].textContent;
                 const contractAmount = parseFloat(cells[9].textContent);
                 const subcontractAmount = parseFloat(cells[10].textContent);
@@ -537,6 +541,7 @@
             });
 
             updateLocalStorage();
+            initProjectSlicer(); // 添加行后更新项目筛选器
             updateSummary();
         }
 
@@ -544,6 +549,7 @@
         function deleteRow(row) {
             row.remove();
             updateLocalStorage();
+            initProjectSlicer(); // 删除行后更新项目筛选器
             updateSummary();
         }
 
@@ -554,7 +560,7 @@
             tableRows.forEach(row => {
                 const contractNumber = row.cells[3].textContent.toLowerCase();
                 const projectName = row.cells[4].textContent.toLowerCase();
-                const project = row.cells[2].textContent.toLowerCase();
+                const project = row.cells[1].textContent.toLowerCase(); // 项目列
                 if (contractNumber.includes(filterValue) || projectName.includes(filterValue) || project.includes(filterValue)) {
                     row.style.display = '';
                 } else {
@@ -574,6 +580,7 @@
             });
             rows.forEach(row => tableBody.appendChild(row));
             updateLocalStorage();
+            initProjectSlicer(); // 排序后更新项目筛选器（如有新顺序影响去重）
             updateSummary();
         }
 
@@ -710,6 +717,7 @@
                 });
 
                 updateLocalStorage();
+                initProjectSlicer(); // 导入后更新项目筛选器
                 updateSummary();
             };
             reader.readAsArrayBuffer(file);
