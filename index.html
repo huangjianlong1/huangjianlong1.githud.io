@@ -171,6 +171,109 @@
     </table>
 
     <script>
+        // 从本地存储加载数据并渲染表格
+        window.addEventListener('load', function () {
+            const storedData = localStorage.getItem('projectTableData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                data.forEach((rowData, index) => {
+                    const newRow = document.createElement('tr');
+                    const columns = [
+                        index + 1,
+                        rowData['当前月份'],
+                        rowData['项目'],
+                        rowData['合同编号'],
+                        rowData['项目名称'],
+                        rowData['请款人员'],
+                        rowData['任务进程'],
+                        parseFloat(rowData['完成进度']),
+                        parseFloat(rowData['请款进度']),
+                        rowData['总包金额'],
+                        rowData['分包金额']
+                    ];
+                    columns.forEach((col, colIndex) => {
+                        const td = document.createElement('td');
+                        if (colIndex === 7 || colIndex === 8) {
+                            const progressBar = document.createElement('div');
+                            progressBar.className = 'progress-bar';
+                            const progressBarFill = document.createElement('div');
+                            progressBarFill.className = `progress-bar-fill ${col === 1? 'complete' : ''}`;
+                            progressBarFill.style.width = `${col * 100}%`;
+                            progressBarFill.textContent = `${(col * 100).toFixed(0)}%`;
+
+                            const input = document.createElement('input');
+                            input.type = 'number';
+                            input.min = 0;
+                            input.max = 1;
+                            input.step = 0.01;
+                            input.value = col;
+                            input.className = 'progress-edit-input';
+                            input.style.opacity = '0';
+
+                            progressBar.appendChild(progressBarFill);
+                            progressBar.appendChild(input);
+
+                            input.addEventListener('focusout', function () {
+                                const newProgress = parseFloat(this.value);
+                                if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 1) {
+                                    progressBarFill.style.width = `${newProgress * 100}%`;
+                                    progressBarFill.textContent = `${(newProgress * 100).toFixed(0)}%`;
+                                    progressBarFill.className = `progress-bar-fill ${newProgress === 1? 'complete' : ''}`;
+                                    updateLocalStorage();
+                                } else {
+                                    this.value = col;
+                                }
+                            });
+
+                            progressBar.addEventListener('click', function () {
+                                input.style.opacity = '1';
+                                input.focus();
+                            });
+
+                            td.appendChild(progressBar);
+                        } else {
+                            td.textContent = col;
+                            td.contentEditable = true;
+                        }
+                        newRow.appendChild(td);
+                    });
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = "删除";
+                    delBtn.onclick = function () {
+                        deleteRow(newRow);
+                    };
+                    const delTd = document.createElement('td');
+                    delTd.appendChild(delBtn);
+                    newRow.appendChild(delTd);
+
+                    const tableBody = document.getElementById('tableBody');
+                    tableBody.appendChild(newRow);
+                });
+            }
+        });
+
+        // 更新本地存储
+        function updateLocalStorage() {
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            const data = [];
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = {};
+                cells.forEach((cell, index) => {
+                    const colName = ['序号', '当前月份', '项目', '合同编号', '项目名称', '请款人员', '任务进程', '完成进度', '请款进度', '总包金额', '分包金额'][index];
+                    if (index === 7 || index === 8) {
+                        const progressText = cell.querySelector('.progress-bar-fill').textContent;
+                        rowData[colName] = parseFloat(progressText.replace('%', '')) / 100;
+                    } else {
+                        rowData[colName] = cell.textContent;
+                    }
+                });
+                data.push(rowData);
+            });
+            localStorage.setItem('projectTableData', JSON.stringify(data));
+        }
+
         // 添加行功能
         function addRow() {
             const currentMonth = document.getElementById('currentMonth').value;
@@ -233,6 +336,7 @@
                             progressBarFill.style.width = `${newProgress * 100}%`;
                             progressBarFill.textContent = `${(newProgress * 100).toFixed(0)}%`;
                             progressBarFill.className = `progress-bar-fill ${newProgress === 1? 'complete' : ''}`;
+                            updateLocalStorage();
                         } else {
                             this.value = col;
                         }
@@ -251,6 +355,15 @@
                 newRow.appendChild(td);
             });
 
+            const delBtn = document.createElement('button');
+            delBtn.textContent = "删除";
+            delBtn.onclick = function () {
+                deleteRow(newRow);
+            };
+            const td = document.createElement('td');
+            td.appendChild(delBtn);
+            newRow.appendChild(td);
+
             const tableBody = document.getElementById('tableBody');
             tableBody.appendChild(newRow);
 
@@ -258,11 +371,14 @@
             document.querySelectorAll('.input-group input').forEach(input => {
                 input.value = '';
             });
+
+            updateLocalStorage();
         }
 
         // 删除行功能
         function deleteRow(row) {
             row.remove();
+            updateLocalStorage();
         }
 
         // 筛选功能
@@ -291,6 +407,7 @@
                 return numA - numB;
             });
             rows.forEach(row => tableBody.appendChild(row));
+            updateLocalStorage();
         }
 
         // 导出功能
@@ -332,6 +449,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            updateLocalStorage();
         }
 
         // 导入功能
@@ -346,86 +464,4 @@
             reader.onload = function (e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                if (jsonData.length === 0) {
-                    alert('导入的XLSX文件中没有数据');
-                    return;
-                }
-
-                const tableBody = document.getElementById('tableBody');
-                tableBody.innerHTML = '';
-
-                jsonData.forEach((dataRow, index) => {
-                    const newRow = document.createElement('tr');
-                    const rowIndex = index + 1;
-                    const columns = [
-                        rowIndex,
-                        dataRow['当前月份'],
-                        dataRow['项目'],
-                        dataRow['合同编号'],
-                        dataRow['项目名称'],
-                        dataRow['请款人员'],
-                        dataRow['任务进程'],
-                        parseFloat(dataRow['完成进度']),
-                        parseFloat(dataRow['请款进度']),
-                        dataRow['总包金额'],
-                        dataRow['分包金额']
-                    ];
-
-                    columns.forEach((col, colIndex) => {
-                        const td = document.createElement('td');
-                        if (colIndex === 7 || colIndex === 8) { // 完成进度和请款进度列
-                            const progressBar = document.createElement('div');
-                            progressBar.className = 'progress-bar';
-                            const progressBarFill = document.createElement('div');
-                            progressBarFill.className = `progress-bar-fill ${col === 1? 'complete' : ''}`;
-                            progressBarFill.style.width = `${col * 100}%`;
-                            progressBarFill.textContent = `${(col * 100).toFixed(0)}%`;
-
-                            const input = document.createElement('input');
-                            input.type = 'number';
-                            input.min = 0;
-                            input.max = 1;
-                            input.step = 0.01;
-                            input.value = col;
-                            input.className = 'progress-edit-input';
-                            input.style.opacity = '0';
-
-                            progressBar.appendChild(progressBarFill);
-                            progressBar.appendChild(input);
-
-                            input.addEventListener('focusout', function () {
-                                const newProgress = parseFloat(this.value);
-                                if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 1) {
-                                    progressBarFill.style.width = `${newProgress * 100}%`;
-                                    progressBarFill.textContent = `${(newProgress * 100).toFixed(0)}%`;
-                                    progressBarFill.className = `progress-bar-fill ${newProgress === 1? 'complete' : ''}`;
-                                } else {
-                                    this.value = col;
-                                }
-                            });
-
-                            progressBar.addEventListener('click', function () {
-                                input.style.opacity = '1';
-                                input.focus();
-                            });
-
-                            td.appendChild(progressBar);
-                        } else {
-                            td.textContent = col;
-                            td.contentEditable = true;
-                        }
-                        newRow.appendChild(td);
-                    });
-
-                    tableBody.appendChild(newRow);
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    </script>
-</body>
-
-</html>
+                const firstSheet
