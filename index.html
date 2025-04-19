@@ -5,260 +5,338 @@
     <meta charset="UTF-8">
     <title>项目管理表</title>
     <style>
-        /* 样式部分与原代码一致，此处省略以保持简洁，可直接复用原样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+       .input-group {
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 5px;
+            margin: 5px;
+        }
+
+        button {
+            padding: 5px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+       .export-btn {
+            background-color: #2196F3;
+            padding: 5px 15px;
+        }
+
+       .filter-group {
+            margin-bottom: 20px;
+        }
+
+        #sortButton {
+            background-color: #FF9800;
+        }
+
+        /* 黄色背景列样式（根据新布局调整） */
+        th:nth-child(3),
+        th:nth-child(5),
+        th:nth-child(7) {
+            background-color: #ffff00;
+            /* 黄色 */
+        }
+
+        /* 进度条样式 */
+       .progress-bar {
+            height: 20px;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 5px auto;
+            position: relative;
+        }
+
+       .progress-bar-fill {
+            height: 100%;
+            background-color: #f1c40f;
+            /* 未完成时的黄色 */
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.3s ease;
+        }
+
+       .progress-bar-fill.complete {
+            background-color: #27ae60;
+            /* 完成时的绿色 */
+        }
+
+        /* 进度条编辑时的输入框样式 */
+       .progress-edit-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: none;
+            text-align: center;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+       .progress-bar:hover .progress-edit-input,
+       .progress-edit-active .progress-edit-input {
+            opacity: 1;
+        }
+
+        /* 汇总区域样式 */
+       .summary-section {
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* 筛选项容器样式 */
+       .slicer {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            margin-bottom: 10px;
+        }
+
+        /* 单个筛选项样式（调整宽度和高度） */
+       .filter-item {
+            width: 133.33px; /* 原200px的2/3 */
+            height: 200px; /* 适当降低高度 */
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-right: 10px;
+            overflow-y: auto;
+            flex: 0 0 auto;
+        }
+
+        /* 汇总表样式 */
+       .summary-table {
+            width: 300px;
+            margin: 0;
+            flex: 1;
+        }
     </style>
     <!-- 引入 SheetJS 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
-    <!-- 汇总区域、输入部分、筛选排序、导出导入、表格部分的HTML结构与原代码一致 -->
+    <!-- 汇总区域 -->
+    <div class="summary-section">
+        <h3>分类汇总</h3>
+        <div class="slicer">
+            <div class="filter-item">
+                <h4>月份</h4>
+                <div id="monthCheckboxes"></div>
+            </div>
+            <div class="filter-item">
+                <h4>项目</h4>
+                <div id="projectCheckboxes"></div>
+            </div>
+            <div class="filter-item">
+                <h4>进度</h4>
+                <div id="progressCheckboxes"></div>
+            </div>
+        </div>
+        <div class="summary-table">
+            <table id="totalContractSummary">
+                <thead>
+                    <tr>
+                        <th colspan="3">总包请款金额汇总</th>
+                    </tr>
+                    <tr>
+                        <th>类型</th>
+                        <th>数量</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody id="totalContractBody">
+                </tbody>
+            </table>
+        </div>
+        <div class="summary-table">
+            <table id="subcontractSummary">
+                <thead>
+                    <tr>
+                        <th colspan="3">分包请款金额汇总</th>
+                    </tr>
+                    <tr>
+                        <th>类型</th>
+                        <th>数量</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody id="subcontractBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 输入部分（匹配新布局） -->
+    <div class="input-group">
+        <input type="text" id="currentMonth" placeholder="当前月份">
+        <input type="text" id="project" placeholder="项目">
+        <input type="text" id="contractNumber" placeholder="合同编号">
+        <input type="text" id="projectName" placeholder="项目名称">
+        <input type="text" id="paymentPerson" placeholder="请款人员">
+        <input type="text" id="taskProcess" placeholder="任务进程">
+        <input type="text" id="completionProgress" placeholder="完成进度">
+        <input type="text" id="paymentProgress" placeholder="请款进度">
+        <input type="text" id="totalContractAmount" placeholder="总包金额">
+        <input type="text" id="subcontractAmount" placeholder="分包金额">
+        <button onclick="addRow()">添加行</button>
+    </div>
+
+    <!-- 筛选与排序部分 -->
+    <div class="filter-group">
+        <input type="text" id="filterInput" placeholder="按项目编号、合同编号或项目名称筛选">
+        <button onclick="filterRows()">筛选</button>
+        <button id="sortButton" onclick="sortRows()">按序号排序</button>
+    </div>
+
+    <!-- 导出按钮 -->
+    <button class="export-btn" onclick="exportToCSV()">导出到CSV</button>
+    <!-- 导入功能按钮 -->
+    <input type="file" id="importFile" accept=".xlsx" style="display: inline-block; margin: 5px;">
+    <button onclick="importXLSX()">导入XLSX</button>
+
+    <!-- 表格部分 -->
+    <table id="projectTable">
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>当前月份</th>
+                <th>项目</th>
+                <th>合同编号</th>
+                <th>项目名称</th>
+                <th>请款人员</th>
+                <th>任务进程</th>
+                <th>完成进度</th>
+                <th>请款进度</th>
+                <th>总包金额</th>
+                <th>分包金额</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- 表格内容动态生成 -->
+        </tbody>
+    </table>
 
     <script>
-        const API_URL = 'http://localhost:5000/api/projects'; // 后端API地址
-        let tableData = []; // 存储表格数据
-
-        // 初始化月份切片器
-        function initMonthSlicer() {
-            const monthSlicer = document.getElementById('monthSlicer');
-            ['1月', '2月', '3月', '4月', '5月', '6月', 
-             '7月', '8月', '9月', '10月', '11月', '12月']
-             .forEach(month => {
-                const option = document.createElement('option');
-                option.value = month;
-                option.textContent = month;
-                monthSlicer.appendChild(option);
+        // 初始化月份多选框
+        function initMonthCheckboxes() {
+            const monthCheckboxes = document.getElementById('monthCheckboxes');
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            months.forEach(month => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = month;
+                checkbox.checked = false;
+                const label = document.createElement('label');
+                label.textContent = month;
+                label.style.marginLeft = '5px';
+                monthCheckboxes.appendChild(checkbox);
+                monthCheckboxes.appendChild(label);
+                monthCheckboxes.appendChild(document.createElement('br'));
             });
         }
 
-        // 初始化项目切片器（从API数据获取）
-        function initProjectSlicer() {
-            const projectSlicer = document.getElementById('projectSlicer');
-            projectSlicer.innerHTML = '<option value="">所有项目</option>';
-            const projects = new Set(tableData.map(item => item.project));
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project;
-                option.textContent = project;
-                projectSlicer.appendChild(option);
-            });
-        }
-
-        // 渲染表格数据
-        function renderTable() {
+        // 初始化项目多选框
+        function initProjectCheckboxes() {
+            const projectCheckboxes = document.getElementById('projectCheckboxes');
+            projectCheckboxes.innerHTML = '';
+            const projects = new Set();
             const tableBody = document.getElementById('tableBody');
-            tableBody.innerHTML = '';
-            
-            tableData.forEach((item, index) => {
-                const newRow = document.createElement('tr');
-                newRow.dataset.id = item._id; // 存储后端返回的ID
-                
-                const columns = [
-                    index + 1,
-                    item.currentMonth,
-                    item.project,
-                    item.contractNumber,
-                    item.projectName,
-                    item.paymentPerson,
-                    item.taskProcess,
-                    item.completionProgress,
-                    item.paymentProgress,
-                    item.totalContractAmount,
-                    item.subcontractAmount
-                ];
-
-                columns.forEach((col, colIndex) => {
-                    const td = document.createElement('td');
-                    if (colIndex === 7 || colIndex === 8) {
-                        // 进度条组件
-                        const progressBar = createProgressBar(col, item._id, colIndex === 7);
-                        td.appendChild(progressBar);
-                    } else {
-                        td.contentEditable = true;
-                        td.textContent = col;
-                        // 普通字段编辑事件
-                        td.addEventListener('blur', async (e) => {
-                            await updateField(item._id, e.target.cellIndex, e.target.textContent);
-                        });
-                    }
-                    newRow.appendChild(td);
-                });
-
-                // 删除按钮
-                const deleteTd = document.createElement('td');
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = '删除';
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.addEventListener('click', () => deleteRow(item._id));
-                deleteTd.appendChild(deleteBtn);
-                newRow.appendChild(deleteTd); // 添加删除列（需在表格thead添加对应th）
-
-                tableBody.appendChild(newRow);
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const project = row.cells[2].textContent;
+                projects.add(project);
             });
-
-            initProjectSlicer();
-            updateSummary();
-        }
-
-        // 创建进度条组件
-        function createProgressBar(progress, projectId, isCompletion) {
-            const progressBar = document.createElement('div');
-            progressBar.className = 'progress-bar';
-            
-            const progressBarFill = document.createElement('div');
-            progressBarFill.className = `progress-bar-fill ${progress === 100? 'complete' : ''}`;
-            progressBarFill.style.width = `${progress}%`;
-            progressBarFill.textContent = `${progress}%`;
-            
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.min = 0;
-            input.max = 100;
-            input.step = 1;
-            input.value = progress;
-            input.className = 'progress-edit-input';
-            
-            input.addEventListener('focusout', async (e) => {
-                const newProgress = parseFloat(e.target.value);
-                if (!isNaN(newProgress)) {
-                    await updateProgress(projectId, isCompletion? 'completionProgress' : 'paymentProgress', newProgress);
-                    progressBarFill.style.width = `${newProgress}%`;
-                    progressBarFill.textContent = `${newProgress}%`;
-                    progressBarFill.className = `progress-bar-fill ${newProgress === 100? 'complete' : ''}`;
-                }
+            projects.forEach(project => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = project;
+                checkbox.checked = false;
+                const label = document.createElement('label');
+                label.textContent = project;
+                label.style.marginLeft = '5px';
+                projectCheckboxes.appendChild(checkbox);
+                projectCheckboxes.appendChild(label);
+                projectCheckboxes.appendChild(document.createElement('br'));
             });
-
-            progressBar.appendChild(progressBarFill);
-            progressBar.appendChild(input);
-            return progressBar;
         }
 
-        // 获取所有数据
-        async function fetchData() {
-            try {
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error('数据获取失败');
-                tableData = await response.json();
-                renderTable();
-            } catch (error) {
-                alert('加载数据失败，请检查服务器连接');
-                console.error(error);
-            }
+        // 初始化进度多选框
+        function initProgressCheckboxes() {
+            const progressCheckboxes = document.getElementById('progressCheckboxes');
+            const options = ['进行中', '已完成', '所有进度'];
+            options.forEach(option => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = option;
+                checkbox.checked = option === '所有进度'; // 初始化全选
+                const label = document.createElement('label');
+                label.textContent = option;
+                label.style.marginLeft = '5px';
+                progressCheckboxes.appendChild(checkbox);
+                progressCheckboxes.appendChild(label);
+                progressCheckboxes.appendChild(document.createElement('br'));
+            });
         }
 
-        // 添加行
-        async function addRow() {
-            const formData = {
-                currentMonth: document.getElementById('currentMonth').value,
-                project: document.getElementById('project').value,
-                contractNumber: document.getElementById('contractNumber').value,
-                projectName: document.getElementById('projectName').value,
-                paymentPerson: document.getElementById('paymentPerson').value,
-                taskProcess: document.getElementById('taskProcess').value,
-                completionProgress: parseFloat(document.getElementById('completionProgress').value),
-                paymentProgress: parseFloat(document.getElementById('paymentProgress').value),
-                totalContractAmount: parseFloat(document.getElementById('totalContractAmount').value),
-                subcontractAmount: parseFloat(document.getElementById('subcontractAmount').value)
-            };
-
-            if (validateForm(formData)) {
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    if (response.ok) {
-                        const newItem = await response.json();
-                        tableData.push(newItem);
-                        renderTable();
-                        clearInputs();
-                    } else {
-                        const error = await response.text();
-                        alert(error || '添加失败');
-                    }
-                } catch (error) {
-                    alert('添加失败，请重试');
-                    console.error(error);
-                }
-            }
-        }
-
-        // 更新普通字段
-        async function updateField(projectId, column, value) {
-            const field = ['currentMonth', 'project', 'contractNumber', 
-                           'projectName', 'paymentPerson', 'taskProcess'][column];
-            if (field) {
-                try {
-                    await fetch(`${API_URL}/${projectId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ [field]: value })
-                    });
-                    tableData = tableData.map(item => 
-                        item._id === projectId? { ...item, [field]: value } : item
-                    );
-                } catch (error) {
-                    console.error('更新失败', error);
-                }
-            }
-        }
-
-        // 更新进度字段
-        async function updateProgress(projectId, field, value) {
-            try {
-                await fetch(`${API_URL}/${projectId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ [field]: value })
-                });
-                tableData = tableData.map(item => 
-                    item._id === projectId? { ...item, [field]: value } : item
-                );
-            } catch (error) {
-                console.error('进度更新失败', error);
-            }
-        }
-
-        // 删除行
-        async function deleteRow(projectId) {
-            try {
-                const response = await fetch(`${API_URL}/${projectId}`, { method: 'DELETE' });
-                if (response.ok) {
-                    tableData = tableData.filter(item => item._id !== projectId);
-                    renderTable();
-                }
-            } catch (error) {
-                alert('删除失败，请重试');
-                console.error(error);
-            }
-        }
-
-        // 表单验证
-        function validateForm(data) {
-            const requiredFields = ['currentMonth', 'project', 'contractNumber', 
-                                    'projectName', 'paymentPerson', 'taskProcess',
-                                    'completionProgress', 'paymentProgress',
-                                    'totalContractAmount', 'subcontractAmount'];
-            for (const field of requiredFields) {
-                if (!data[field] || (['completionProgress', 'paymentProgress'].includes(field) && isNaN(data[field]))) {
-                    alert(`请填写有效的 ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} 字段`);
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // 清空输入框
-        function clearInputs() {
-            document.querySelectorAll('.input-group input').forEach(input => input.value = '');
-        }
-
-        // 分类汇总（修改为从tableData获取数据）
+        // 分类汇总函数
         function summarizeData() {
-            const monthFilter = document.getElementById('monthSlicer').value;
-            const projectFilter = document.getElementById('projectSlicer').value;
-            const progressFilter = document.getElementById('progressSlicer').value;
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+
+            // 获取勾选的月份
+            const monthCheckboxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
+            const monthFilter = Array.from(monthCheckboxes).map(checkbox => checkbox.value);
+
+            // 获取勾选的项目
+            const projectCheckboxes = document.querySelectorAll('#projectCheckboxes input[type="checkbox"]:checked');
+            const projectFilter = Array.from(projectCheckboxes).map(checkbox => checkbox.value);
+
+            // 获取勾选的进度
+            const progressCheckboxes = document.querySelectorAll('#progressCheckboxes input[type="checkbox"]:checked');
+            const progressFilter = Array.from(progressCheckboxes).map(checkbox => checkbox.value);
+
+            // 处理“所有进度”选项
+            if (progressFilter.includes('所有进度')) {
+                progressFilter = [];
+            }
 
             let totalContractInProgressAmount = 0;
             let totalContractCompletedAmount = 0;
@@ -269,26 +347,27 @@
             let subcontractInProgressCount = 0;
             let subcontractCompletedCount = 0;
 
-            tableData.forEach(item => {
-                const progress = item.completionProgress;
-                const monthMatch = !monthFilter || item.currentMonth === monthFilter;
-                const projectMatch = !projectFilter || item.project === projectFilter;
-                const progressMatch = (() => {
-                    if (!progressFilter) return true;
-                    if (progressFilter === '进行中') return progress < 100;
-                    if (progressFilter === '已完成') return progress === 100;
-                    return false;
-                })();
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const currentMonth = cells[1].textContent;
+                const project = cells[2].textContent;
+                const progress = parseFloat(cells[7].textContent);
+                const contractAmount = parseFloat(cells[9].textContent);
+                const subcontractAmount = parseFloat(cells[10].textContent);
+
+                const monthMatch = monthFilter.length === 0 || monthFilter.includes(currentMonth);
+                const projectMatch = projectFilter.length === 0 || projectFilter.includes(project);
+                const progressMatch = progressFilter.length === 0 || (progressFilter.includes('进行中') && progress < 100) || (progressFilter.includes('已完成') && progress === 100);
 
                 if (monthMatch && projectMatch && progressMatch) {
                     if (progress === 100) {
-                        totalContractCompletedAmount += item.totalContractAmount;
-                        subcontractCompletedAmount += item.subcontractAmount;
+                        totalContractCompletedAmount += contractAmount;
+                        subcontractCompletedAmount += subcontractAmount;
                         totalContractCompletedCount++;
                         subcontractCompletedCount++;
                     } else {
-                        totalContractInProgressAmount += item.totalContractAmount;
-                        subcontractInProgressAmount += item.subcontractAmount;
+                        totalContractInProgressAmount += contractAmount;
+                        subcontractInProgressAmount += subcontractAmount;
                         totalContractInProgressCount++;
                         subcontractInProgressCount++;
                     }
@@ -307,68 +386,353 @@
             };
         }
 
-        // 更新汇总显示
+        // 更新汇总数据和表格
         function updateSummary() {
+            const totalContractBody = document.getElementById('totalContractBody');
+            const subcontractBody = document.getElementById('subcontractBody');
             const summary = summarizeData();
-            // 与原代码相同的汇总HTML更新逻辑，此处省略（可直接复用原代码中的DOM操作）
+
+            // 总包请款金额汇总
+            totalContractBody.innerHTML = `
+                <tr><td>进行中</td><td>${summary.totalContractInProgressCount}</td><td>${summary.totalContractInProgressAmount.toFixed(2)}</td></tr>
+                <tr><td>已完成</td><td>${summary.totalContractCompletedCount}</td><td>${summary.totalContractCompletedAmount.toFixed(2)}</td></tr>
+                <tr><td>合计</td><td>${summary.totalContractInProgressCount + summary.totalContractCompletedCount}</td><td>${(summary.totalContractInProgressAmount + summary.totalContractCompletedAmount).toFixed(2)}</td></tr>
+            `;
+
+            // 分包请款金额汇总
+            subcontractBody.innerHTML = `
+                <tr><td>进行中</td><td>${summary.subcontractInProgressCount}</td><td>${summary.subcontractInProgressAmount.toFixed(2)}</td></tr>
+                <tr><td>已完成</td><td>${summary.subcontractCompletedCount}</td><td>${summary.subcontractCompletedAmount.toFixed(2)}</td></tr>
+                <tr><td>合计</td><td>${summary.subcontractInProgressCount + summary.subcontractCompletedCount}</td><td>${(summary.subcontractInProgressAmount + summary.subcontractCompletedAmount).toFixed(2)}</td></tr>
+            `;
         }
 
-        // 切片器事件监听
-        document.querySelectorAll('.slicer select').forEach(select => {
-            select.addEventListener('change', updateSummary);
+        // 监听多选框变化
+        document.querySelectorAll('.slicer input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSummary);
         });
 
-        // 导入功能（修改为文件上传）
-        async function importXLSX() {
-            const fileInput = document.getElementById('importFile');
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                const response = await fetch('http://localhost:5000/api/import', {
-                    method: 'POST',
-                    body: formData
+        // 从本地存储加载数据并渲染表格
+        window.addEventListener('load', function () {
+            initMonthCheckboxes();
+            initProgressCheckboxes();
+            const storedData = localStorage.getItem('projectTableData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                data.forEach((rowData, index) => {
+                    const newRow = document.createElement('tr');
+                    const columns = [
+                        index + 1,
+                        rowData['当前月份'],
+                        rowData['项目'],
+                        rowData['合同编号'],
+                        rowData['项目名称'],
+                        rowData['请款人员'],
+                        rowData['任务进程'],
+                        rowData['完成进度'] * 100,
+                        rowData['请款进度'] * 100,
+                        rowData['总包金额'],
+                        rowData['分包金额']
+                    ];
+                    columns.forEach((col, colIndex) => {
+                        const td = document.createElement('td');
+                        if (colIndex === 7 || colIndex === 8) {
+                            const progressBar = document.createElement('div');
+                            progressBar.className = 'progress-bar';
+                            const progressBarFill = document.createElement('div');
+                            progressBarFill.className = `progress-bar-fill ${col === 100? 'complete' : ''}`;
+                            progressBarFill.style.width = `${col}%`;
+                            progressBarFill.textContent = `${col}%`;
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.value = col;
+                            input.addEventListener('blur', function () {
+                                const newProgress = parseFloat(this.value);
+                                if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 100) {
+                                    progressBarFill.style.width = `${newProgress}%`;
+                                    progressBarFill.textContent = `${newProgress}%`;
+                                    progressBarFill.className = `progress-bar-fill ${newProgress === 100? 'complete' : ''}`;
+                                    updateLocalStorage();
+                                } else {
+                                    this.value = col;
+                                }
+                            });
+                            progressBar.appendChild(progressBarFill);
+                            progressBar.appendChild(input);
+                            td.appendChild(progressBar);
+                        } else {
+                            td.textContent = col;
+                            td.contentEditable = true;
+                            td.addEventListener('blur', updateLocalStorage);
+                        }
+                        newRow.appendChild(td);
+                    });
+                    const tableBody = document.getElementById('tableBody');
+                    tableBody.appendChild(newRow);
                 });
-                if (response.ok) {
-                    alert('导入成功');
-                    await fetchData(); // 重新加载数据
-                } else {
-                    alert('导入失败');
-                }
-            } catch (error) {
-                console.error('导入错误', error);
+                initProjectCheckboxes(); // 加载数据后初始化项目多选框
             }
-        }
-
-        // 导出功能（修改为从API获取文件流）
-        function exportToCSV() {
-            window.location.href = 'http://localhost:5000/api/export';
-        }
-
-        // 页面加载时初始化
-        window.addEventListener('load', async () => {
-            initMonthSlicer();
-            await fetchData(); // 从后端加载数据
-            // 初始化筛选、排序等事件（与原代码逻辑一致，需保持DOM操作正确）
+            updateSummary();
         });
 
-        // 筛选、排序等功能（与原代码逻辑一致，仅数据来源改为tableData，需调整DOM操作）
+        // 更新本地存储
+        function updateLocalStorage() {
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            const data = [];
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = {};
+                cells.forEach((cell, index) => {
+                    const colName = ['序号', '当前月份', '项目', '合同编号', '项目名称', '请款人员', '任务进程', '完成进度', '请款进度', '总包金额', '分包金额'][index];
+                    if (index === 7 || index === 8) {
+                        const progressText = cell.querySelector('.progress-bar-fill').textContent;
+                        rowData[colName] = parseFloat(progressText.replace('%', '')) / 100;
+                    } else {
+                        rowData[colName] = cell.textContent;
+                    }
+                });
+                data.push(rowData);
+            });
+            localStorage.setItem('projectTableData', JSON.stringify(data));
+        }
+
+        // 添加行功能
+        function addRow() {
+            const currentMonth = document.getElementById('currentMonth').value;
+            const project = document.getElementById('project').value;
+            const contractNumber = document.getElementById('contractNumber').value;
+            const projectName = document.getElementById('projectName').value;
+            const paymentPerson = document.getElementById('paymentPerson').value;
+            const taskProcess = document.getElementById('taskProcess').value;
+            const completionProgress = parseFloat(document.getElementById('completionProgress').value);
+            const paymentProgress = parseFloat(document.getElementById('paymentProgress').value);
+            const totalContractAmount = document.getElementById('totalContractAmount').value;
+            const subcontractAmount = document.getElementById('subcontractAmount').value;
+
+            if (!currentMonth ||!project ||!contractNumber ||!projectName ||!paymentPerson ||!taskProcess || isNaN(completionProgress) || isNaN(paymentProgress) ||!totalContractAmount ||!subcontractAmount) {
+                alert("请填写所有必填信息");
+                return;
+            }
+
+            const newRow = document.createElement('tr');
+            const rowIndex = document.querySelectorAll('#tableBody tr').length + 1;
+            const columns = [
+                rowIndex,
+                currentMonth,
+                project,
+                contractNumber,
+                projectName,
+                paymentPerson,
+                taskProcess,
+                completionProgress * 100,
+                paymentProgress * 100,
+                totalContractAmount,
+                subcontractAmount
+            ];
+
+            columns.forEach((col, colIndex) => {
+                const td = document.createElement('td');
+                if (colIndex === 7 || colIndex === 8) {
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'progress-bar';
+                    const progressBarFill = document.createElement('div');
+                    progressBarFill.className = `progress-bar-fill ${col === 100? 'complete' : ''}`;
+                    progressBarFill.style.width = `${col}%`;
+                    progressBarFill.textContent = `${col}%`;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = col;
+                    input.addEventListener('blur', function () {
+                        const newProgress = parseFloat(this.value);
+                        if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 100) {
+                            progressBarFill.style.width = `${newProgress}%`;
+                            progressBarFill.textContent = `${newProgress}%`;
+                            progressBarFill.className = `progress-bar-fill ${newProgress === 100? 'complete' : ''}`;
+                            updateLocalStorage();
+                        } else {
+                            this.value = col;
+                        }
+                    });
+                    progressBar.appendChild(progressBarFill);
+                    progressBar.appendChild(input);
+                    td.appendChild(progressBar);
+                } else {
+                    td.textContent = col;
+                    td.contentEditable = true;
+                    td.addEventListener('blur', updateLocalStorage);
+                }
+                newRow.appendChild(td);
+            });
+
+            const tableBody = document.getElementById('tableBody');
+            tableBody.appendChild(newRow);
+
+            // 清空输入框
+            document.querySelectorAll('.input-group input').forEach(input => {
+                input.value = '';
+            });
+
+            initProjectCheckboxes(); // 添加行后更新项目多选框
+            updateSummary();
+            updateLocalStorage();
+        }
+
+        // 删除行功能
+        function deleteRow(row) {
+            row.remove();
+            initProjectCheckboxes();
+            updateSummary();
+            updateLocalStorage();
+        }
+
+        // 筛选功能
         function filterRows() {
             const filterValue = document.getElementById('filterInput').value.toLowerCase();
             const tableRows = document.querySelectorAll('#tableBody tr');
             tableRows.forEach(row => {
                 const contractNumber = row.cells[3].textContent.toLowerCase();
                 const projectName = row.cells[4].textContent.toLowerCase();
-                row.style.display = (contractNumber.includes(filterValue) || projectName.includes(filterValue))? '' : 'none';
+                const shouldShow = contractNumber.includes(filterValue) || projectName.includes(filterValue);
+                row.style.display = shouldShow? '' : 'none';
             });
         }
 
+        // 排序功能（按序号）
         function sortRows() {
-            tableData.sort((a, b) => a.contractNumber.localeCompare(b.contractNumber));
-            renderTable();
+            const tableBody = document.getElementById('tableBody');
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                const numA = parseInt(a.cells[0].textContent);
+                const numB = parseInt(b.cells[0].textContent);
+                return numA - numB;
+            });
+            rows.forEach(row => tableBody.appendChild(row));
+            updateLocalStorage();
+            updateSummary();
+        }
+
+        // 导出功能
+        function exportToCSV() {
+            const headers = [
+                '序号',
+                '当前月份',
+                '项目',
+                '合同编号',
+                '项目名称',
+                '请款人员',
+                '任务进程',
+                '完成进度',
+                '请款进度',
+                '总包金额',
+                '分包金额'
+            ];
+            const csvContent = [headers.join(',')];
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [];
+                cells.forEach((cell, index) => {
+                    if (index === 7 || index === 8) {
+                        const progressText = cell.querySelector('.progress-bar-fill').textContent;
+                        rowData.push(parseFloat(progressText.replace('%', '')) / 100);
+                    } else {
+                        rowData.push(cell.textContent);
+                    }
+                });
+                csvContent.push(rowData.join(','));
+            });
+            const blob = new Blob([csvContent.join('\n')], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `projects_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 导入功能
+        function importXLSX() {
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('请选择要导入的XLSX文件');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                if (jsonData.length === 0) {
+                    alert('导入的XLSX文件中没有数据');
+                    return;
+                }
+
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = '';
+
+                jsonData.forEach((rowData, index) => {
+                    const newRow = document.createElement('tr');
+                    const columns = [
+                        index + 1,
+                        rowData['当前月份'],
+                        rowData['项目'],
+                        rowData['合同编号'],
+                        rowData['项目名称'],
+                        rowData['请款人员'],
+                        rowData['任务进程'],
+                        rowData['完成进度'] * 100,
+                        rowData['请款进度'] * 100,
+                        rowData['总包金额'],
+                        rowData['分包金额']
+                    ];
+                    columns.forEach((col, colIndex) => {
+                        const td = document.createElement('td');
+                        if (colIndex === 7 || colIndex === 8) {
+                            const progressBar = document.createElement('div');
+                            progressBar.className = 'progress-bar';
+                            const progressBarFill = document.createElement('div');
+                            progressBarFill.className = `progress-bar-fill ${col === 100? 'complete' : ''}`;
+                            progressBarFill.style.width = `${col}%`;
+                            progressBarFill.textContent = `${col}%`;
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.value = col;
+                            input.addEventListener('blur', function () {
+                                const newProgress = parseFloat(this.value);
+                                if (!isNaN(newProgress) && newProgress >= 0 && newProgress <= 100) {
+                                    progressBarFill.style.width = `${newProgress}%`;
+                                    progressBarFill.textContent = `${newProgress}%`;
+                                    progressBarFill.className = `progress-bar-fill ${newProgress === 100? 'complete' : ''}`;
+                                    updateLocalStorage();
+                                } else {
+                                    this.value = col;
+                                }
+                            });
+                            progressBar.appendChild(progressBarFill);
+                            progressBar.appendChild(input);
+                            td.appendChild(progressBar);
+                        } else {
+                            td.textContent = col;
+                            td.contentEditable = true;
+                            td.addEventListener('blur', updateLocalStorage);
+                        }
+                        newRow.appendChild(td);
+                    });
+                    tableBody.appendChild(newRow);
+                });
+
+                initProjectCheckboxes();
+                updateSummary();
+                updateLocalStorage();
+            };
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
