@@ -6,58 +6,77 @@ function importXLSX() {
     }
     const file = fileInput.files[0];
     const reader = new FileReader();
+
     reader.onload = function (e) {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
         if (jsonData.length === 0) {
             alert('导入的XLSX文件中没有数据');
             return;
         }
+
         const headers = Object.keys(jsonData[0]);
-        if (headers.length!== 16) {
+        // 确保文档列数和预期一致（这里假设预期为10列，根据实际调整）
+        if (headers.length!== 10) {
             alert('导入的XLSX文件格式不正确，列数不匹配');
             return;
         }
+
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
-        const token = 'YOUR_GITHUB_TOKEN'; // 替换为你的令牌
-        const gistData = {
-            description: 'Imported project data',
-            public: true,
-            files: {
-                'imported_data.json': {
-                    content: JSON.stringify(jsonData)
+
+        jsonData.forEach((dataRow, index) => {
+            const newRow = document.createElement('tr');
+            const rowIndex = index + 1;
+            // 序号按数量自动生成
+            const columns = [
+                rowIndex,
+                dataRow['当前月份'],
+                dataRow['项目'],
+                dataRow['合同编号'],
+                dataRow['项目名称'],
+                dataRow['请款人员'],
+                dataRow['任务进程'],
+                parseFloat(dataRow['完成进度']) / 100,
+                parseFloat(dataRow['请款进度']) / 100,
+                dataRow['总包金额'],
+                dataRow['分包金额']
+            ];
+
+            columns.forEach((col, colIndex) => {
+                const td = document.createElement('td');
+                if (colIndex === 7 || colIndex === 8) { // 完成进度和请款进度列
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'progress-bar';
+                    const progressBarFill = document.createElement('div');
+                    progressBarFill.className = `progress-bar-fill ${col === 1? 'complete' : ''}`;
+                    progressBarFill.style.width = `${col * 100}%`;
+                    progressBarFill.textContent = `${(col * 100).toFixed(0)}%`;
+                    progressBar.appendChild(progressBarFill);
+                    td.appendChild(progressBar);
+                } else {
+                    td.textContent = col;
+                    td.contentEditable = true;
                 }
-            }
-        };
-        fetch('https://api.github.com/gists', {
-            method: 'POST',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(gistData)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.html_url) {
-                console.log('数据已存储为 Gist: ', result.html_url);
-                // 处理导入成功后的逻辑，如更新表格显示等
-                jsonData.forEach(dataRow => {
-                    const newRow = document.createElement('tr');
-                    // 构建表格行逻辑...
-                    tableBody.appendChild(newRow);
-                });
-            } else {
-                alert('数据存储失败');
-            }
-        })
-        .catch(error => {
-            console.error('发送数据时出错: ', error);
+                newRow.appendChild(td);
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = "删除";
+            delBtn.onclick = function () {
+                deleteRow(newRow);
+            };
+            const td = document.createElement('td');
+            td.appendChild(delBtn);
+            newRow.appendChild(td);
+
+            tableBody.appendChild(newRow);
         });
     };
+
     reader.readAsArrayBuffer(file);
 }
