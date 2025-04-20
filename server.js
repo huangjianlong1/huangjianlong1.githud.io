@@ -1,91 +1,52 @@
-const express = require('express');
-const mysql = require('mysql');
-const bodyParser = require('body-parser');
+import { Vika } from "@vikadata/vika";
 
-const app = express();
-const port = 3000; // 可以根据需要修改端口号
-
-// 使用 body-parser 中间件处理 JSON 和 URL 编码数据
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// 配置数据库连接
-const connection = mysql.createConnection({
-  host: 'YOUR_DB_HOST', // 腾讯云数据库的主机地址，可在腾讯云控制台获取
-  user: 'YOUR_DB_USER', // 数据库用户名
-  password: 'YOUR_DB_PASSWORD', // 数据库密码
-  database: 'YOUR_DB_NAME', // 数据库名称
-  port: 3306, // 数据库端口，默认为 3306
+// 初始化维格表实例
+const vika = new Vika({
+    token: "usk0hOtSGQBGMkZzNnBwDUx",
+    fieldKey: "name"
 });
 
-// 连接数据库
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to database: ', err);
-    return;
-  }
-  console.log('Connected to the database!');
-});
+// 指定要操作的维格表
+const datasheet = vika.datasheet("dstaRya3LFuYPVxBKb");
 
-// API 端点示例：获取所有项目数据
-app.get('/api/projects', (req, res) => {
-  const query = 'SELECT * FROM your_table_name'; // 替换为实际的表名
-  connection.query(query, (error, results) => {
-    if (error) throw error;
-    res.json(results);
-  });
-});
+/**
+ * 查询项目请款金额汇总表格的记录
+ * @param {Object} options - 查询选项
+ * @param {string} [options.viewId] - 视图 ID
+ * @param {Array} [options.sort] - 排序条件
+ * @param {Array} [options.recordIds] - 要查询的记录 ID 数组
+ * @param {Array} [options.fields] - 要返回的字段数组
+ * @param {string} [options.filterByFormula] - 筛选公式
+ * @param {number} [options.maxRecords] - 最大返回记录数
+ * @param {string} [options.cellFormat] - 单元格值类型
+ * @param {string} [options.fieldKey] - 字段查询和返回的 key
+ * @returns {Promise<Object>} - 包含查询结果的 Promise
+ */
+async function queryProjectPaymentRecords(options = {}) {
+    try {
+        const response = await datasheet.records.query(options);
+        if (response.success) {
+            return response.data;
+        } else {
+            console.error(response);
+            throw new Error("查询失败");
+        }
+    } catch (error) {
+        console.error("查询时出错:", error);
+        throw error;
+    }
+}
 
-// API 端点示例：添加新项目数据
-app.post('/api/projects', (req, res) => {
-  const { 
-    currentMonth, 
-    project, 
-    contractNumber, 
-    projectName, 
-    paymentPerson, 
-    taskProcess, 
-    completionProgress, 
-    paymentProgress, 
-    totalContractAmount, 
-    subcontractAmount 
-  } = req.body;
+// 示例使用
+const queryOptions = {
+    viewId: "viwwHaGWmSr6k"
+};
 
-  const query = `
-    INSERT INTO your_table_name (
-      currentMonth, 
-      project, 
-      contractNumber, 
-      projectName, 
-      paymentPerson, 
-      taskProcess, 
-      completionProgress, 
-      paymentProgress, 
-      totalContractAmount, 
-      subcontractAmount
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const values = [
-    currentMonth, 
-    project, 
-    contractNumber, 
-    projectName, 
-    paymentPerson, 
-    taskProcess, 
-    completionProgress, 
-    paymentProgress, 
-    totalContractAmount, 
-    subcontractAmount
-  ];
-
-  connection.query(query, values, (error, results) => {
-    if (error) throw error;
-    res.json({ message: '项目数据已成功添加', id: results.insertId });
-  });
-});
-
-// 启动服务器
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+queryProjectPaymentRecords(queryOptions)
+   .then(data => {
+        console.log("查询结果:", data);
+    })
+   .catch(error => {
+        console.error("查询出错:", error);
+    });
+    
